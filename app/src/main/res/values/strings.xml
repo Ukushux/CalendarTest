@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">CalendarTest</string>
+    <string name="Deed1">Deed1</string>
+    <string name="Deed2">Deed2</string>
+    <string name="Deed3">Deed3</string>
+    <string name="Deed4">Deed4</string>
+    <string name="Deed5">Deed5</string>
+    <string name="Deed6">Deed6</string>
+    <string name="title_activity_add_deed">AddDeedActivity</string>
+</resources>
