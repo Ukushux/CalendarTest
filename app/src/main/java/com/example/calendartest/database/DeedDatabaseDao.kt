@@ -11,14 +11,14 @@ import androidx.room.Update
 interface DeedDatabaseDao {
     @Query("SELECT * from my_deed_list")
     fun getAll(): LiveData<List<DeedItem>>
-    @Query("SELECT * from my_deed_list where itemId = :id")
+    @Query("SELECT * from my_deed_list where id = :id")
     fun getById(id: Int) : DeedItem?
     @Insert
-    suspend fun insert(item:DeedItem)
+    fun insert(item:DeedItem)
     @Update
-    suspend fun update(item:DeedItem)
+    fun update(item:DeedItem)
     @Delete
-    suspend fun delete(item:DeedItem)
+    fun delete(item:DeedItem)
     @Query("DELETE FROM my_deed_list")
-    suspend fun deleteAllDeeds()
+    fun deleteAllDeeds()
 }
