@@ -38,14 +38,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.calendartest.JSON.jsonValues
 import com.example.calendartest.database.DeedItem
 import com.example.calendartest.database.DeedViewModel
 import com.example.calendartest.database.DeedViewModelFactory
 import com.example.calendartest.ui.theme.CalendarTestTheme
 import com.mabn.calendarlibrary.ExpandableCalendar
 import com.mabn.calendarlibrary.core.calendarDefaultTheme
-import org.json.JSONArray
 import java.sql.Timestamp
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -69,37 +67,24 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-data class Deed(val id: Int = 0, val date_start: Long = 0, val date_finish: Long = 0, val name: String = "", val description: String = "")
+data class Deed(
+    val id: Int = 0,
+    val date_start: Long = 0,
+    val date_finish: Long = 0,
+    val name: String = "",
+    val description: String = ""
+)
 
-fun JSONArray.asSeq() =
-    sequence {
-        val jsonArray = this@asSeq
-        for (i in 0 until jsonArray.length()) {
-            val jsonObject = jsonArray.getJSONObject(i)
-            yield(jsonObject)
-        }
-    }
-
-fun getDeedsJson(deeds: String) = JSONArray(deeds).asSeq().map {
-    com.example.calendartest.Deed(
-        id = it.getInt("id"),
-        date_start = it.getLong("date_start"),
-        date_finish = it.getLong("date_finish"),
-        name = it.getString("name"),
-        description = it.getString("description")
-
-    )
-}
 
 val Long.localDateTime: LocalDateTime
     get() = LocalDateTime.ofInstant(
         Timestamp(this * 1000L).toInstant(), ZoneId.systemDefault()
     )
 
-fun fillDeeds(dateTime: LocalDateTime, deedList: List<com.example.calendartest.Deed>): List<com.example.calendartest.Deed> {
+fun fillDeeds(dateTime: LocalDateTime, deedList: List<DeedItem>): List<DeedItem> {
     val currentDay = dateTime.toLocalDate().atStartOfDay()
-    val emptyDeed = Deed(name = "-")
-    fun fill(deedList:  Map<com.example.calendartest.Deed, LocalDateTime>) =
+    val emptyDeed = DeedItem(name = "-", id = 0, description = "")
+    fun fill(deedList: Map<DeedItem, LocalDateTime>) =
         (0L until 24L)
             .map { currentDay.plusHours(it)..currentDay.plusHours(it + 1L) }
             .associateWith { deedList.firstNotNullOfOrNull { kv -> if (it.contains(kv.value)) kv else null } }
@@ -108,6 +93,7 @@ fun fillDeeds(dateTime: LocalDateTime, deedList: List<com.example.calendartest.D
                     date_start = k.start.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000L
                 )
             }
+
     val deedsStart =
         deedList
             .associateWith { it.date_start.localDateTime }
@@ -115,10 +101,10 @@ fun fillDeeds(dateTime: LocalDateTime, deedList: List<com.example.calendartest.D
         deedList
             .map { it.copy(name = it.name + " " + "(Конец)") }
             .associateWith { it.date_finish.localDateTime }
-    val deeds = (deedsEnd + deedsStart).filter { it.value.toLocalDate().atStartOfDay() == currentDay }
+    val deeds =
+        (deedsEnd + deedsStart).filter { it.value.toLocalDate().atStartOfDay() == currentDay }
     return fill(deeds)
 }
-
 
 
 @Composable
@@ -147,8 +133,8 @@ fun Calendar(currentDate: MutableState<LocalDate>) {
 fun Deed(
     text: String,
     modifier: Modifier = Modifier
-){
-    Button(modifier = modifier, onClick = {  }) {
+) {
+    Button(modifier = modifier, onClick = { }) {
         Text(
             text = text
         )
@@ -158,15 +144,15 @@ fun Deed(
 @Composable
 fun DeedsList(
     currentDate: MutableState<LocalDate>,
-    res: List<Deed>,
+    res: List<DeedItem>,
     modifier: Modifier = Modifier
     //list: List<DeedItem>,
     //mDeedViewModel: DeedViewModel
 
-){
+) {
     val deeds = fillDeeds(currentDate.value.atStartOfDay(), res)
-    LazyColumn(){
-        deeds.map {deed ->
+    LazyColumn() {
+        deeds.map { deed ->
             item {
                 Deed(text = deed.name)
             }
@@ -187,13 +173,14 @@ fun DeedsList(
 }
 
 @Composable
-fun AddDeed(modifier: Modifier = Modifier){
+fun AddDeedButton(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     FloatingActionButton(
         onClick = {
             context.startActivity(Intent(context, AddDeedActivity::class.java))
-             },
-        modifier=modifier) {
+        },
+        modifier = modifier
+    ) {
         Icon(
             imageVector = Icons.Rounded.Add,
             contentDescription = "Add FAB",
@@ -203,19 +190,18 @@ fun AddDeed(modifier: Modifier = Modifier){
 }
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier){
+fun HomeScreen(modifier: Modifier = Modifier) {
     val currentDate = remember { mutableStateOf(LocalDate.now()) }
 
     val context = LocalContext.current
     val mDeedViewModel: DeedViewModel = viewModel(
         factory = DeedViewModelFactory(context.applicationContext as Application)
     )
-    val items = mDeedViewModel.readAllData.observeAsState(listOf()).value
-
+    val items = mDeedViewModel.deeds.observeAsState(listOf())
 
     Column(modifier) {
         Calendar(currentDate)
-        //DeedsList(currentDate)
+        DeedsList(currentDate,items.value)
     }
 }
 
@@ -224,9 +210,9 @@ fun HomeScreen(modifier: Modifier = Modifier){
 fun CalendarTest(modifier: Modifier = Modifier) {
     CalendarTestTheme {
         Scaffold(
-            floatingActionButton = { AddDeed(modifier = modifier.padding(50.dp)) },
+            floatingActionButton = { AddDeedButton(modifier = modifier.padding(50.dp)) },
             floatingActionButtonPosition = FabPosition.End
-        ) {    padding ->
+        ) { padding ->
             HomeScreen(Modifier.padding(padding))
         }
     }
@@ -242,7 +228,7 @@ fun CalendarPreview() {
 
 @Preview
 @Composable
-fun DeedPreview(){
+fun DeedPreview() {
     CalendarTestTheme {
         Deed(text = "Hello")
     }
@@ -258,15 +244,15 @@ fun DeedsListPreview() {
 
 @Preview
 @Composable
-fun AddDeedPreview(){
+fun AddDeedPreview() {
     CalendarTestTheme {
-        AddDeed()
+        AddDeedButton()
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun HomeScreenPreview(){
+fun HomeScreenPreview() {
     CalendarTestTheme {
         HomeScreen()
     }
@@ -274,7 +260,7 @@ fun HomeScreenPreview(){
 
 @Preview(showBackground = true)
 @Composable
-fun CalendarTestPreview(){
+fun CalendarTestPreview() {
     CalendarTestTheme {
         CalendarTest()
     }

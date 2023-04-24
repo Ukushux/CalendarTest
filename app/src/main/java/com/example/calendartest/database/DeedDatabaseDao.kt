@@ -10,7 +10,7 @@ import androidx.room.Update
 @Dao
 interface DeedDatabaseDao {
     @Query("SELECT * from my_deed_list")
-    fun getAll(): LiveData<List<DeedItem>>
+    fun getAll(): List<DeedItem>
     @Query("SELECT * from my_deed_list where id = :id")
     fun getById(id: Int) : DeedItem?
     @Insert
