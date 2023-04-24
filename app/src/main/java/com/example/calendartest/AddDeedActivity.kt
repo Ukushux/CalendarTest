@@ -107,6 +107,8 @@ fun DeedField(
     ) {
         var text1 by remember { mutableStateOf("") }
         var text2 by remember { mutableStateOf("") }
+        var text3 by remember { mutableStateOf("") }
+        var text4 by remember { mutableStateOf("") }
 
         TextField(
             value  = text1,
@@ -116,6 +118,15 @@ fun DeedField(
         TextField(
             value = text2,
             onValueChange = {text2 = it},
+            modifier = modifier)
+        TextField(
+            value  = text3,
+            onValueChange = { text3 = it },
+            modifier = modifier)
+
+        TextField(
+            value = text4,
+            onValueChange = {text4 = it},
             modifier = modifier)
     }
 }

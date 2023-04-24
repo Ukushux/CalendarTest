@@ -3,20 +3,15 @@
 package com.example.calendartest
 
 import android.app.Application
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -27,7 +22,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -37,19 +31,14 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.room.Room
 import com.example.calendartest.JSON.jsonValues
-import com.example.calendartest.database.DeedDatabase
-import com.example.calendartest.database.DeedDatabaseDao
 import com.example.calendartest.database.DeedItem
 import com.example.calendartest.database.DeedViewModel
 import com.example.calendartest.database.DeedViewModelFactory
@@ -80,7 +69,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-data class Mydeed(val id: Int = 0, val date_start: Long = 0, val date_finish: Long = 0, val name: String = "", val description: String = "")
+data class Deed(val id: Int = 0, val date_start: Long = 0, val date_finish: Long = 0, val name: String = "", val description: String = "")
 
 fun JSONArray.asSeq() =
     sequence {
@@ -92,7 +81,7 @@ fun JSONArray.asSeq() =
     }
 
 fun getDeedsJson(deeds: String) = JSONArray(deeds).asSeq().map {
-    Mydeed(
+    com.example.calendartest.Deed(
         id = it.getInt("id"),
         date_start = it.getLong("date_start"),
         date_finish = it.getLong("date_finish"),
@@ -107,10 +96,10 @@ val Long.localDateTime: LocalDateTime
         Timestamp(this * 1000L).toInstant(), ZoneId.systemDefault()
     )
 
-fun fillDeeds(dateTime: LocalDateTime, deedList: List<Mydeed>): List<Mydeed> {
+fun fillDeeds(dateTime: LocalDateTime, deedList: List<com.example.calendartest.Deed>): List<com.example.calendartest.Deed> {
     val currentDay = dateTime.toLocalDate().atStartOfDay()
-    val emptyDeed = Mydeed(name = "-")
-    fun fill(deedList:  Map<Mydeed, LocalDateTime>) =
+    val emptyDeed = Deed(name = "-")
+    fun fill(deedList:  Map<com.example.calendartest.Deed, LocalDateTime>) =
         (0L until 24L)
             .map { currentDay.plusHours(it)..currentDay.plusHours(it + 1L) }
             .associateWith { deedList.firstNotNullOfOrNull { kv -> if (it.contains(kv.value)) kv else null } }
@@ -169,12 +158,13 @@ fun Deed(
 @Composable
 fun DeedsList(
     currentDate: MutableState<LocalDate>,
+    res: List<Deed>,
     modifier: Modifier = Modifier
     //list: List<DeedItem>,
     //mDeedViewModel: DeedViewModel
 
 ){
-    val deeds = fillDeeds(currentDate.value.atStartOfDay(), getDeedsJson(jsonValues).toList())
+    val deeds = fillDeeds(currentDate.value.atStartOfDay(), res)
     LazyColumn(){
         deeds.map {deed ->
             item {
@@ -216,16 +206,19 @@ fun AddDeed(modifier: Modifier = Modifier){
 fun HomeScreen(modifier: Modifier = Modifier){
     val currentDate = remember { mutableStateOf(LocalDate.now()) }
 
-    //val context = LocalContext.current
-    //val mDeedViewModel: DeedViewModel = viewModel(
-        //factory = DeedViewModelFactory(context.applicationContext as Application)
-    //)
-    //val items = mDeedViewModel.readAllData.observeAsState(listOf()).value
+    val context = LocalContext.current
+    val mDeedViewModel: DeedViewModel = viewModel(
+        factory = DeedViewModelFactory(context.applicationContext as Application)
+    )
+    val items = mDeedViewModel.readAllData.observeAsState(listOf()).value
+
+
     Column(modifier) {
         Calendar(currentDate)
-        DeedsList(currentDate)
+        //DeedsList(currentDate)
     }
 }
+
 
 @Composable
 fun CalendarTest(modifier: Modifier = Modifier) {
